@@ -25,8 +25,6 @@ function ProfilePage() {
   const { auth } = Route.useRouteContext()
   const { user, logout, isLoading, isAuthenticated } = auth
 
-  console.log("ProfilePage render:", { user, isLoading, isAuthenticated })
-
   if (isLoading) {
     return (
       <div style={{ display: "flex", justifyContent: "center", padding: "50px" }}>

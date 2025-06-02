@@ -3,33 +3,15 @@
 import React from "react"
 import ReactDOM from "react-dom/client"
 import { RouterProvider, createRouter } from "@tanstack/react-router"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { QueryClientProvider } from "@tanstack/react-query"
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 import { routeTree } from "./routeTree.gen"
 import { AuthProvider, useAuth, type AuthContextType } from "./providers/auth-provider"
-
-// Create a client with better error handling for auth
-export const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: true,
-      retry: (failureCount, error: any) => {
-        // Don't retry 401 errors (authentication failures)
-        if (error?.message?.includes("Not authenticated") || error?.status === 401) {
-          return false
-        }
-        // Retry other errors up to 2 times
-        return failureCount < 2
-      },
-      staleTime: 1000 * 60 * 2, // 2 minutes
-    },
-  },
-})
+import { queryClient } from "./lib/query-client"
 
 // Define the router context interface
 interface RouterContext {
   auth: AuthContextType
-  queryClient: QueryClient
 }
 
 // Set up a Router instance with auth context
@@ -38,7 +20,6 @@ const router = createRouter({
   defaultPreload: "intent",
   context: {
     auth: undefined!, // This will be set after we wrap the app in an AuthProvider
-    queryClient,
   },
 })
 
@@ -47,15 +28,12 @@ declare module "@tanstack/react-router" {
   interface Register {
     router: typeof router
   }
-  interface RouterContext {
-    auth: AuthContextType
-    queryClient: QueryClient
-  }
+  interface RouterContext extends RouterContext {}
 }
 
 function InnerApp() {
   const auth = useAuth()
-  return <RouterProvider router={router} context={{ auth, queryClient }} />
+  return <RouterProvider router={router} context={{ auth }} />
 }
 
 function App() {

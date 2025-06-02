@@ -11,8 +11,6 @@ function HomePage() {
   const { auth } = Route.useRouteContext()
   const { user, isLoading, isAuthenticated } = auth
 
-  console.log("HomePage render:", { user, isLoading, isAuthenticated })
-
   if (isLoading) {
     return (
       <div style={{ display: "flex", justifyContent: "center", padding: "50px" }}>

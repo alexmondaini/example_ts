@@ -1,11 +1,11 @@
 "use client"
 
-import { createContext, useContext, type ReactNode, useState, useEffect } from "react"
+import { createContext, useContext, type ReactNode, useState, useEffect, useCallback } from "react"
 import { useQuery, useMutation } from "@tanstack/react-query"
-import { useNavigate } from "@tanstack/react-router"
 import { getCurrentUser, loginUser, logoutUser } from "../lib/auth"
-import { queryClient } from "../main"
+import { queryClient } from "../lib/query-client"
 import type { User, LoginRequest } from "../types"
+import { useNavigate } from "@tanstack/react-router"
 
 export interface AuthContextType {
   user: User | null
@@ -16,9 +16,7 @@ export interface AuthContextType {
   login: (credentials: LoginRequest) => Promise<void>
   logout: () => Promise<void>
   loginError: string | null
-  // Add method to check if we should attempt auth
   shouldCheckAuth: boolean
-  // Method to trigger auth check (for after login)
   triggerAuthCheck: () => void
 }
 
@@ -27,11 +25,11 @@ const AuthContext = createContext<AuthContextType | null>(null)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
   const [shouldCheckAuth, setShouldCheckAuth] = useState(false)
+  const [loginError, setLoginError] = useState<string | null>(null)
 
   // Check if we should attempt auth on mount
   useEffect(() => {
     // Only check auth if there's a reasonable chance the user is logged in
-    // You could check for any indicator here (like a session cookie exists)
     const hasSessionCookie = document.cookie.includes("session") // Adjust based on your cookie name
     setShouldCheckAuth(hasSessionCookie)
   }, [])
@@ -41,7 +39,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     data: user,
     isLoading,
     isError,
-    error,
     isPending,
     isFetching,
   } = useQuery({
@@ -58,30 +55,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Mutation to handle login
   const loginMutation = useMutation({
-    mutationKey: ["login"],
     mutationFn: loginUser,
     onSuccess: (userData) => {
-      // Enable auth checking for future
+      setLoginError(null)
       setShouldCheckAuth(true)
-      // Update the auth-user query with the new user data
       queryClient.setQueryData(["auth-user"], userData)
       navigate({ to: "/profile" })
+    },
+    onError: (error: Error) => {
+      setLoginError(error.message || "Login failed")
     },
   })
 
   // Mutation to handle logout
   const logoutMutation = useMutation({
-    mutationKey: ["logout"],
     mutationFn: logoutUser,
     onSuccess: () => {
-      // Disable auth checking
       setShouldCheckAuth(false)
-      // Clear all auth-related data from cache
       queryClient.removeQueries({ queryKey: ["auth-user"] })
       navigate({ to: "/" })
     },
     onError: () => {
-      // Even if logout API fails, clear local state and redirect
       setShouldCheckAuth(false)
       queryClient.removeQueries({ queryKey: ["auth-user"] })
       navigate({ to: "/" })
@@ -89,41 +83,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   })
 
   // Login function
-  const login = async (credentials: LoginRequest) => {
-    await loginMutation.mutateAsync(credentials)
-  }
+  const login = useCallback(
+    async (credentials: LoginRequest) => {
+      await loginMutation.mutateAsync(credentials)
+    },
+    [loginMutation],
+  )
 
   // Logout function
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await logoutMutation.mutateAsync()
-  }
+  }, [logoutMutation])
 
-  // Method to trigger auth check (useful for manual checks)
-  const triggerAuthCheck = () => {
+  // Method to trigger auth check
+  const triggerAuthCheck = useCallback(() => {
     setShouldCheckAuth(true)
-  }
+  }, [])
 
   // User is authenticated if we have user data and no error
   const isAuthenticated = !!user && !isError
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user: user || null,
-        isLoading: shouldCheckAuth && isLoading,
-        isPending: shouldCheckAuth && isPending,
-        isFetching: shouldCheckAuth && isFetching,
-        isAuthenticated,
-        shouldCheckAuth,
-        triggerAuthCheck,
-        login,
-        logout,
-        loginError: loginMutation.error ? (loginMutation.error as Error).message : null,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  )
+  const value = {
+    user: user || null,
+    isLoading: shouldCheckAuth && isLoading,
+    isPending: shouldCheckAuth && isPending,
+    isFetching: shouldCheckAuth && isFetching,
+    isAuthenticated,
+    shouldCheckAuth,
+    triggerAuthCheck,
+    login,
+    logout,
+    loginError,
+  }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 // Custom hook to use the auth context

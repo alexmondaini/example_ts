@@ -11,8 +11,6 @@ export const LoginForm: React.FC = () => {
   const { login, loginError } = useAuth()
   const { message } = App.useApp() // Use App hook instead of static message
 
-  console.log("LoginForm render:", { loginError })
-
   const handleSubmit = async (values: LoginRequest) => {
     try {
       await login(values)
