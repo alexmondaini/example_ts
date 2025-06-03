@@ -1,29 +1,16 @@
-import { createFileRoute, redirect } from "@tanstack/react-router"
+"use client"
+
+import { createFileRoute } from "@tanstack/react-router"
 import { UserProfile } from "../components/UserProfile"
+import { useAuth } from "../providers/auth-provider"
 import { Spin } from "antd"
 
 export const Route = createFileRoute("/profile")({
-  beforeLoad: ({ context }) => {
-    const { auth } = context
-
-    // If not authenticated and not currently checking auth, redirect to home
-    if (!auth.isAuthenticated && !auth.isLoading && !auth.shouldCheckAuth) {
-      throw redirect({
-        to: "/",
-      })
-    }
-
-    // If we should check auth but haven't yet, trigger the check
-    if (!auth.isAuthenticated && !auth.isLoading && auth.shouldCheckAuth) {
-      auth.triggerAuthCheck()
-    }
-  },
   component: ProfilePage,
 })
 
 function ProfilePage() {
-  const { auth } = Route.useRouteContext()
-  const { user, logout, isLoading, isAuthenticated } = auth
+  const { user, logout, isLoading } = useAuth()
 
   if (isLoading) {
     return (
@@ -33,10 +20,9 @@ function ProfilePage() {
     )
   }
 
-  // If not authenticated after loading, redirect to home
-  if (!isAuthenticated || !user) {
-    window.location.href = "/" // Force redirect to clear any stale state
-    return null
+  // This check is a fallback, but the beforeLoad in the root route should prevent this case
+  if (!user) {
+    return <div>Please log in to view your profile.</div>
   }
 
   return <UserProfile user={user} onLogout={logout} />

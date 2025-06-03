@@ -1,6 +1,6 @@
 "use client"
 
-import { Form, Input, Button, Card, Alert, App } from "antd"
+import { Form, Input, Button, Card, Alert, message } from "antd"
 import { UserOutlined, LockOutlined } from "@ant-design/icons"
 import type { LoginRequest } from "../types"
 import type React from "react"
@@ -9,14 +9,13 @@ import { useAuth } from "../providers/auth-provider"
 export const LoginForm: React.FC = () => {
   const [form] = Form.useForm()
   const { login, loginError } = useAuth()
-  const { message } = App.useApp() // Use App hook instead of static message
 
   const handleSubmit = async (values: LoginRequest) => {
     try {
       await login(values)
       message.success("Login successful!")
     } catch (error) {
-      console.error("Login error:", error)
+      // Error is handled by the auth provider
     }
   }
 

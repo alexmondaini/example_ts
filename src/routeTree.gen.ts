@@ -2,7 +2,5 @@
 import { Route as RootRoute } from "./routes/__root"
 import { Route as IndexRoute } from "./routes/index"
 import { Route as ProfileRoute } from "./routes/profile"
-import { Route as DashboardRoute } from "./routes/dashboard"
-import { Route as SettingsRoute } from "./routes/settings"
 
-export const routeTree = RootRoute.addChildren([IndexRoute, ProfileRoute, DashboardRoute, SettingsRoute])
+export const routeTree = RootRoute.addChildren([IndexRoute, ProfileRoute])

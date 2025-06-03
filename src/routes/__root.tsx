@@ -1,18 +1,40 @@
-import { Outlet, createRootRoute } from "@tanstack/react-router"
+import { Outlet, createRootRoute, redirect } from "@tanstack/react-router"
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools"
-import { ConfigProvider, Layout, Typography, App } from "antd"
+import { ConfigProvider, Layout, Typography } from "antd"
+import { AuthProvider } from "../providers/auth-provider"
+import { queryClient } from "../main"
 
 const { Header, Content, Footer } = Layout
 const { Title } = Typography
 
 export const Route = createRootRoute({
   component: RootComponent,
+  beforeLoad: async ({ location }) => {
+    try {
+      // Try to get the user from the cache
+      const user = queryClient.getQueryData(["auth-user"])
+
+      // If trying to access /profile but not logged in, redirect to home
+      if (location.pathname === "/profile" && !user) {
+        throw redirect({
+          to: "/",
+        })
+      }
+    } catch (error) {
+      // If there's an error or no user, and trying to access protected route
+      if (location.pathname === "/profile") {
+        throw redirect({
+          to: "/",
+        })
+      }
+    }
+  },
 })
 
 function RootComponent() {
   return (
-    <ConfigProvider theme={{ token: { colorPrimary: "#1890ff" } }}>
-      <App>
+    <AuthProvider>
+      <ConfigProvider theme={{ token: { colorPrimary: "#1890ff" } }}>
         <Layout style={{ minHeight: "100vh" }}>
           <Header style={{ display: "flex", alignItems: "center" }}>
             <Title level={3} style={{ color: "white", margin: 0 }}>
@@ -34,8 +56,8 @@ function RootComponent() {
             FastAPI + Tanstack Query + Ant Design Demo ©{new Date().getFullYear()}
           </Footer>
         </Layout>
-      </App>
+      </ConfigProvider>
       <TanStackRouterDevtools />
-    </ConfigProvider>
+    </AuthProvider>
   )
 }

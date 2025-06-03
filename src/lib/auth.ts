@@ -12,7 +12,7 @@ export const loginUser = async (credentials: LoginRequest): Promise<User> => {
   })
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}))
+    const errorData = await response.json()
     throw new Error(errorData.detail || "Login failed")
   }
 
@@ -26,13 +26,7 @@ export const getCurrentUser = async (): Promise<User> => {
   })
 
   if (!response.ok) {
-    // If 401, the cookie is invalid/expired - this is expected behavior
-    if (response.status === 401) {
-      throw new Error("Not authenticated")
-    }
-    // For other errors, throw a more specific error
-    const errorData = await response.json().catch(() => ({}))
-    throw new Error(errorData.detail || `Server error: ${response.status}`)
+    throw new Error("Not authenticated")
   }
 
   return response.json()
@@ -46,7 +40,6 @@ export const logoutUser = async (): Promise<void> => {
   })
 
   if (!response.ok) {
-    // Even if logout fails on server, we'll clear local state
-    console.warn("Logout request failed, but clearing local state anyway")
+    throw new Error("Logout failed")
   }
 }

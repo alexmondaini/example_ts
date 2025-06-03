@@ -1,5 +1,8 @@
+"use client"
+
 import { createFileRoute } from "@tanstack/react-router"
 import { LoginForm } from "../components/LoginForm"
+import { useAuth } from "../providers/auth-provider"
 import { Button, Spin } from "antd"
 import { Link } from "@tanstack/react-router"
 
@@ -8,13 +11,12 @@ export const Route = createFileRoute("/")({
 })
 
 function HomePage() {
-  const { auth } = Route.useRouteContext()
-  const { user, isLoading, isAuthenticated } = auth
+  const { user, isLoading, isAuthenticated } = useAuth()
 
   if (isLoading) {
     return (
       <div style={{ display: "flex", justifyContent: "center", padding: "50px" }}>
-        <Spin size="large" tip="Checking authentication..." />
+        <Spin size="large" tip="Loading..." />
       </div>
     )
   }
